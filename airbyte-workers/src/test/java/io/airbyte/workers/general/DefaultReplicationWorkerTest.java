@@ -84,6 +84,8 @@ class DefaultReplicationWorkerTest {
   private static final AirbyteMessage STATE_MESSAGE = AirbyteMessageUtils.createStateMessage("checkpoint", "1");
   private static final AirbyteTraceMessage ERROR_TRACE_MESSAGE =
       AirbyteMessageUtils.createErrorTraceMessage("a connector error occurred", Double.valueOf(123));
+  private static final String STREAM1 = "stream1";
+  private static final String INDUCED_EXCEPTION = "induced exception";
 
   private Path jobRoot;
   private AirbyteSource source;
@@ -422,8 +424,8 @@ class DefaultReplicationWorkerTest {
     when(messageTracker.getTotalRecordsEmitted()).thenReturn(12L);
     when(messageTracker.getTotalBytesEmitted()).thenReturn(100L);
     when(messageTracker.getTotalStateMessagesEmitted()).thenReturn(3L);
-    when(messageTracker.getStreamToEmittedBytes()).thenReturn(Collections.singletonMap("stream1", 100L));
-    when(messageTracker.getStreamToEmittedRecords()).thenReturn(Collections.singletonMap("stream1", 12L));
+    when(messageTracker.getStreamToEmittedBytes()).thenReturn(Collections.singletonMap(STREAM1, 100L));
+    when(messageTracker.getStreamToEmittedRecords()).thenReturn(Collections.singletonMap(STREAM1, 12L));
 
     final ReplicationWorker worker = new DefaultReplicationWorker(
         JOB_ID,
@@ -447,7 +449,7 @@ class DefaultReplicationWorkerTest {
                 .withRecordsCommitted(12L)) // since success, should use emitted count
             .withStreamStats(Collections.singletonList(
                 new StreamSyncStats()
-                    .withStreamName("stream1")
+                    .withStreamName(STREAM1)
                     .withStats(new SyncStats()
                         .withBytesEmitted(100L)
                         .withRecordsEmitted(12L)
@@ -475,7 +477,7 @@ class DefaultReplicationWorkerTest {
 
   @Test
   void testPopulatesStateOnFailureIfAvailable() throws Exception {
-    doThrow(new IllegalStateException("induced exception")).when(source).close();
+    doThrow(new IllegalStateException(INDUCED_EXCEPTION)).when(source).close();
     when(messageTracker.getDestinationOutputState()).thenReturn(Optional.of(new State().withState(STATE_MESSAGE.getState().getData())));
 
     final ReplicationWorker worker = new DefaultReplicationWorker(
@@ -494,7 +496,7 @@ class DefaultReplicationWorkerTest {
 
   @Test
   void testRetainsStateOnFailureIfNewStateNotAvailable() throws Exception {
-    doThrow(new IllegalStateException("induced exception")).when(source).close();
+    doThrow(new IllegalStateException(INDUCED_EXCEPTION)).when(source).close();
 
     final ReplicationWorker worker = new DefaultReplicationWorker(
         JOB_ID,
@@ -513,14 +515,14 @@ class DefaultReplicationWorkerTest {
 
   @Test
   void testPopulatesStatsOnFailureIfAvailable() throws Exception {
-    doThrow(new IllegalStateException("induced exception")).when(source).close();
+    doThrow(new IllegalStateException(INDUCED_EXCEPTION)).when(source).close();
     when(messageTracker.getTotalRecordsEmitted()).thenReturn(12L);
     when(messageTracker.getTotalBytesEmitted()).thenReturn(100L);
     when(messageTracker.getTotalRecordsCommitted()).thenReturn(Optional.of(6L));
     when(messageTracker.getTotalStateMessagesEmitted()).thenReturn(3L);
-    when(messageTracker.getStreamToEmittedBytes()).thenReturn(Collections.singletonMap("stream1", 100L));
-    when(messageTracker.getStreamToEmittedRecords()).thenReturn(Collections.singletonMap("stream1", 12L));
-    when(messageTracker.getStreamToCommittedRecords()).thenReturn(Optional.of(Collections.singletonMap("stream1", 6L)));
+    when(messageTracker.getStreamToEmittedBytes()).thenReturn(Collections.singletonMap(STREAM1, 100L));
+    when(messageTracker.getStreamToEmittedRecords()).thenReturn(Collections.singletonMap(STREAM1, 12L));
+    when(messageTracker.getStreamToCommittedRecords()).thenReturn(Optional.of(Collections.singletonMap(STREAM1, 6L)));
 
     final ReplicationWorker worker = new DefaultReplicationWorker(
         JOB_ID,
@@ -539,7 +541,7 @@ class DefaultReplicationWorkerTest {
         .withRecordsCommitted(6L);
     final List<StreamSyncStats> expectedStreamStats = Collections.singletonList(
         new StreamSyncStats()
-            .withStreamName("stream1")
+            .withStreamName(STREAM1)
             .withStats(new SyncStats()
                 .withBytesEmitted(100L)
                 .withRecordsEmitted(12L)
@@ -556,7 +558,7 @@ class DefaultReplicationWorkerTest {
     final StandardSyncInput syncInputWithoutState = Jsons.clone(syncInput);
     syncInputWithoutState.setState(null);
 
-    doThrow(new IllegalStateException("induced exception")).when(source).close();
+    doThrow(new IllegalStateException(INDUCED_EXCEPTION)).when(source).close();
 
     final ReplicationWorker worker = new DefaultReplicationWorker(
         JOB_ID,
@@ -575,7 +577,7 @@ class DefaultReplicationWorkerTest {
 
   @Test
   void testDoesNotPopulateOnIrrecoverableFailure() {
-    doThrow(new IllegalStateException("induced exception")).when(messageTracker).getTotalRecordsEmitted();
+    doThrow(new IllegalStateException(INDUCED_EXCEPTION)).when(messageTracker).getTotalRecordsEmitted();
 
     final ReplicationWorker worker = new DefaultReplicationWorker(
         JOB_ID,
