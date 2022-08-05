@@ -232,7 +232,7 @@ public class WorkerApp {
         defaultWorkerConfigs,
         defaultProcessFactory);
 
-    final PersistStateActivityImpl persistStateActivity = new PersistStateActivityImpl(statePersistence, featureFlags);
+    final PersistStateActivityImpl persistStateActivity = new PersistStateActivityImpl(airbyteApiClient, featureFlags);
 
     final Worker syncWorker = factory.newWorker(TemporalJobType.SYNC.name(), getWorkerOptions(maxWorkers.getMaxSyncWorkers()));
 
